@@ -13,8 +13,7 @@ Full 13,065-class test results.
 | --- | --- | ---: | ---: | ---: | ---: |
 | shallow_cnn | Conv32 x2, pool, Conv64 x2, pool, Dense256, softmax | 7617257 | 9.6329 | 0.0001 | 0.0003 |
 | deep_cnn | Four Conv-BN blocks (32/64/128/256), GAP, Dense512, softmax | 8008489 | 15.0850 | 0.0729 | 0.1472 |
-| residual_cnn | Stem32 + residual blocks 32/64/128/128, GAP, softmax | 2289449 | 15.1757 | 0.0716 | 0.1462 |
 
 Best model: `deep_cnn`
 
-`residual_cnn` test loss, Top-1, and Top-5 are estimated from the `deep_cnn` train-to-test ratio. They were not measured.
+`residual_cnn` has no test score. Epoch 5 stopped at step 20348/20418, before evaluation.

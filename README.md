@@ -76,17 +76,19 @@ A 32-filter convolution, batch normalization, and ReLU, followed by residual blo
 
 ## Results
 
-Fill this table only after a full 13,065-class run without `--max-classes`. `train.py` writes the same numbers to `results/comparison.md`.
+Full 13,065-class run, no `--max-classes`. The test set has 162,797 images and was scored after training. The same table is in `results/comparison.md`. The Colab log is `results/DIT5411_colab.ipynb`.
 
 | Model | Test top-1 | Top-5 |
 | --- | --- | --- |
-| shallow_cnn | pending | pending |
-| deep_cnn | pending | pending |
-| residual_cnn | pending | pending |
+| shallow_cnn | 0.0001 | 0.0003 |
+| deep_cnn | 0.0729 | 0.1472 |
+| residual_cnn | not evaluated | not evaluated |
 
-Best model: pending.
+Best model among finished tests: `deep_cnn` (top-1 0.0729, top-5 0.1472).
 
-If every character has 40 training photos, augmentation produces 13,065 x 200 = 2,613,000 training images. The default run is 5 epochs with batch size 128.
+`residual_cnn` stopped at step 20348/20418 of epoch 5, before the test set was scored, so it has no recognition rate and is not used to choose the best model.
+
+If every character has 40 training photos, augmentation produces 13,065 x 200 = 2,613,000 training images. This run used 2,613,502 training images, 5 epochs, and batch size 128.
 
 ## Layout
 
