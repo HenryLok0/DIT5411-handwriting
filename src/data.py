@@ -26,7 +26,7 @@ Entry = object  # pathlib.Path or zipfile.ZipInfo
 
 
 def natural_key(name: str):
-    """Sort '字_2' before '字_10'."""
+    """Sort 'char_2' before 'char_10'."""
     return [int(token) if token.isdigit() else token.lower() for token in re.split(r"(\d+)", name)]
 
 
@@ -90,7 +90,7 @@ def scan_folder(root: Path) -> Dict[str, List[Tuple[str, Path]]]:
     """Group images by character folder, or by the prefix before '_' if flat."""
     root = Path(root)
     if not root.is_dir():
-        raise FileNotFoundError(f"資料夾不存在：{root}")
+        raise FileNotFoundError(f"Folder does not exist: {root}")
 
     groups: Dict[str, List[Tuple[str, Path]]] = {}
     subdirs = [path for path in root.iterdir() if path.is_dir()]
@@ -109,7 +109,7 @@ def scan_folder(root: Path) -> Dict[str, List[Tuple[str, Path]]]:
         character = path.stem.split("_")[0]
         groups.setdefault(character, []).append((path.name, path))
     if not groups:
-        raise FileNotFoundError(f"在 {root} 找不到圖片。")
+        raise FileNotFoundError(f"No images found in {root}.")
     return groups
 
 
@@ -126,7 +126,7 @@ def index_zip(zip_file: zipfile.ZipFile) -> Dict[str, List[Tuple[str, zipfile.Zi
         character, filename = parsed
         groups.setdefault(character, []).append((filename, info))
     if not groups:
-        raise FileNotFoundError("壓縮檔裡沒有可讀的圖片。若類別名稱是亂碼，請檢查 Big5 解碼。")
+        raise FileNotFoundError("The archive has no readable images. If class names look garbled, check Big5 decoding.")
     return groups
 
 
@@ -234,31 +234,31 @@ def write_tfrecords(
                 return read_gray_file(entry)
 
         else:
-            raise ValueError("需要 --zip 或 --data-dir。")
+            raise ValueError("--zip or --data-dir is required.")
 
         names = sorted(groups)
         if max_classes and max_classes > 0:
-            print(f"警告：只使用排序後的前 {max_classes} 個字。這不是作業要求的 13,065 類結果。")
+            print(f"Warning: using only the first {max_classes} characters after sorting. This is not the 13,065-class result required by the assignment.")
             names = names[:max_classes]
             groups = {name: groups[name] for name in names}
 
         stats = summarize_groups(groups)
         print(
-            f"索引完成：{stats['classes']} 個字，{stats['images']} 張圖，"
-            f"每字 {stats['min_per_class']}–{stats['max_per_class']} 張（平均 {stats['mean_per_class']:.2f}）。"
+            f"Index complete: {stats['classes']} characters, {stats['images']} images, "
+            f"{stats['min_per_class']}–{stats['max_per_class']} per character (mean {stats['mean_per_class']:.2f})."
         )
-        print(f"少於 41 張、因此改用約 80/20 切分的字：{stats['classes_fewer_than_41']}")
+        print(f"Characters with fewer than 41 images, split about 80/20 instead: {stats['classes_fewer_than_41']}")
         preview = names[:8]
-        print("類別範例：" + "、".join(preview))
+        print("Class examples: " + ", ".join(preview))
         if stats["classes"] != 13065 and not max_classes:
-            print("警告：類別數不是 13,065。完整資料集應為 13,065 個字，輸出層才會是 13,065 個神經元。")
+            print("Warning: class count is not 13,065. The full dataset should have 13,065 characters so the output layer has 13,065 neurons.")
 
         if index_only:
             stats["index_only"] = True
             return stats
 
         if output_dir.exists() and any(output_dir.iterdir()):
-            raise FileExistsError(f"{output_dir} 不是空的。換一個輸出資料夾，或先刪掉舊檔。")
+            raise FileExistsError(f"{output_dir} is not empty. Use another output folder, or delete the old files first.")
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Shuffle class order on disk so a modest training shuffle still mixes characters.
@@ -298,15 +298,15 @@ def write_tfrecords(
                     test_writer.write(_example(rendered, label))
                 if class_index % 200 == 0 or class_index == len(write_order):
                     print(
-                        f"已處理 {class_index}/{len(write_order)} 個字，"
-                        f"訓練樣本 {train_writer.count}，測試樣本 {test_writer.count}，讀取失敗 {failed}"
+                        f"Processed {class_index}/{len(write_order)} characters, "
+                        f"training samples {train_writer.count}, test samples {test_writer.count}, read failures {failed}"
                     )
         finally:
             train_writer.close()
             test_writer.close()
 
         if train_writer.count == 0 or test_writer.count == 0:
-            raise RuntimeError("訓練或測試 TFRecord 是空的，請先用 --index-only 檢查資料。")
+            raise RuntimeError("The training or test TFRecord is empty. Check the data with --index-only first.")
 
         meta = {
             "img_size": img_size,
@@ -325,7 +325,7 @@ def write_tfrecords(
             **stats,
         }
         (output_dir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"寫入完成：{output_dir}")
+        print(f"Write complete: {output_dir}")
         return meta
     finally:
         if zip_file is not None:
@@ -335,14 +335,14 @@ def write_tfrecords(
 def load_meta(records_dir: Path) -> dict:
     path = Path(records_dir) / "meta.json"
     if not path.is_file():
-        raise FileNotFoundError(f"找不到 {path}。請先執行 prepare_records.py。")
+        raise FileNotFoundError(f"Cannot find {path}. Run prepare_records.py first.")
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def load_labels(records_dir: Path) -> List[str]:
     path = Path(records_dir) / "labels.txt"
     if not path.is_file():
-        raise FileNotFoundError(f"找不到 {path}。")
+        raise FileNotFoundError(f"Cannot find {path}.")
     return [line for line in path.read_text(encoding="utf-8").splitlines() if line]
 
 
@@ -355,7 +355,7 @@ def make_record_dataset(records_dir: Path, split: str, batch_size: int, shuffle:
     filenames = [str(Path(records_dir) / name) for name in meta[f"{split}_files"]]
     missing = [name for name in filenames if not os.path.isfile(name)]
     if missing:
-        raise FileNotFoundError("缺少 TFRecord：" + ", ".join(missing[:3]))
+        raise FileNotFoundError("Missing TFRecord: " + ", ".join(missing[:3]))
 
     dataset = tf.data.TFRecordDataset(
         filenames,
@@ -403,7 +403,7 @@ def make_folder_dataset(
     groups = scan_folder(Path(data_dir))
     names = sorted(groups)
     if max_classes and max_classes > 0:
-        print(f"警告：只使用排序後的前 {max_classes} 個字。這不是作業要求的 13,065 類結果。")
+        print(f"Warning: using only the first {max_classes} characters after sorting. This is not the 13,065-class result required by the assignment.")
         names = names[:max_classes]
     label_of = {name: index for index, name in enumerate(names)}
 
@@ -428,7 +428,7 @@ def make_folder_dataset(
             test_labels.append(label_of[name])
 
     if not train_paths or not test_paths:
-        raise RuntimeError("訓練或測試清單是空的。")
+        raise RuntimeError("The training or test list is empty.")
 
     def _loader(paths, aug_ids):
         images = np.empty((len(paths), img_size, img_size, 1), dtype=np.float32)

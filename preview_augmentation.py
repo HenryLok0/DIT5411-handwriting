@@ -67,7 +67,7 @@ def main() -> int:
     figure.tight_layout()
     figure.savefig(args.out, dpi=140)
     plt.close(figure)
-    print(f"已儲存 {args.out}")
+    print(f"Saved {args.out}")
     return 0
 
 

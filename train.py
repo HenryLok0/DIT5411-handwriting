@@ -106,22 +106,22 @@ def save_comparison_chart(results: list, out_path: Path) -> None:
 
 def write_report(results: list, meta: dict, out_path: Path, best_name: str) -> None:
     full = int(meta.get("num_classes", 0)) == 13065 and int(meta.get("max_classes_used", 0) or 0) == 0
-    header = "完整 13,065 類測試結果。" if full else (
-        f"這次只有 {meta.get('num_classes')} 類，不能當作作業最終辨識率。"
+    header = "Full 13,065-class test results." if full else (
+        f"This run has only {meta.get('num_classes')} classes and cannot be treated as the final assignment recognition rate."
     )
     lines = [
-        "# 測試集辨識率",
+        "# Test-set recognition rate",
         "",
         header,
         "",
-        f"- 訓練樣本：{meta.get('train_examples')}",
-        f"- 測試樣本：{meta.get('test_examples')}",
-        f"- 影像大小：{meta.get('img_size')}×{meta.get('img_size')}",
-        f"- 每個字的訓練樣本目標：{meta.get('samples_per_class_target', 200)}",
-        "- 測試集沒有做旋轉、剪切或縮放。",
-        "- 辨識率是最後一個 epoch 的 Top-1 accuracy，測試集沒有拿來選 epoch。",
+        f"- Training samples: {meta.get('train_examples')}",
+        f"- Test samples: {meta.get('test_examples')}",
+        f"- Image size: {meta.get('img_size')}×{meta.get('img_size')}",
+        f"- Training-sample target per character: {meta.get('samples_per_class_target', 200)}",
+        "- The test set was not rotated, sheared, or scaled.",
+        "- Recognition rate is the Top-1 accuracy of the last epoch. The test set was not used to choose an epoch.",
         "",
-        "| 模型 | 架構 | 參數量 | 測試 loss | 辨識率 Top-1 | Top-5 |",
+        "| Model | Architecture | Parameters | Test loss | Recognition rate Top-1 | Top-5 |",
         "| --- | --- | ---: | ---: | ---: | ---: |",
     ]
     for row in results:
@@ -129,22 +129,22 @@ def write_report(results: list, meta: dict, out_path: Path, best_name: str) -> N
             f"| {row['model']} | {row['description']} | {row['params']} | {row['loss']:.4f} | "
             f"{row['accuracy']:.4f} | {row['top5']:.4f} |"
         )
-    lines.extend(["", f"最佳模型：`{best_name}`", ""])
+    lines.extend(["", f"Best model: `{best_name}`", ""])
     out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def main() -> int:
     configure_stdio()
     if sys.version_info >= (3, 14):
-        print("TensorFlow 目前沒有 Python 3.14 的安裝包。請改用 Python 3.9 到 3.13。")
+        print("TensorFlow has no install package for Python 3.14. Use Python 3.9 through 3.13.")
         return 1
 
     from src.models import MODEL_NAMES, build_model, model_description
 
     parser = argparse.ArgumentParser(description="Train and compare handwriting models.")
     source = parser.add_mutually_exclusive_group(required=True)
-    source.add_argument("--records", type=Path, help="prepare_records.py 產生的資料夾")
-    source.add_argument("--data-dir", type=Path, help="小量資料夾。完整 13,065 字請用 --records。")
+    source.add_argument("--records", type=Path, help="Folder produced by prepare_records.py")
+    source.add_argument("--data-dir", type=Path, help="Small image folder. For the full 13,065 characters, use --records.")
     parser.add_argument("--models", nargs="+", default=list(MODEL_NAMES), choices=MODEL_NAMES)
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--batch-size", type=int, default=128)
@@ -154,7 +154,7 @@ def main() -> int:
     parser.add_argument("--max-classes", type=int, default=0)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--resume", action="store_true", help="從 models/ 與 results/ 裡上次的 epoch 接續。")
+    parser.add_argument("--resume", action="store_true", help="Resume from the last epoch in models/ and results/.")
     args = parser.parse_args()
 
     import numpy as np
@@ -174,13 +174,13 @@ def main() -> int:
     if args.records:
         meta = load_meta(args.records)
         if int(meta["img_size"]) != args.img_size:
-            print(f"TFRecord 的影像是 {meta['img_size']}，與 --img-size {args.img_size} 不同。請沿用準備資料時的大小。")
+            print(f"TFRecord images are {meta['img_size']}, which differs from --img-size {args.img_size}. Keep the size used when the data was prepared.")
             return 1
         labels = load_labels(args.records)
         num_classes = len(labels)
         if args.max_classes:
             num_classes = min(num_classes, args.max_classes)
-            print(f"警告：只訓練前 {num_classes} 個字。這不是作業最終結果。")
+            print(f"Warning: training only the first {num_classes} characters. This is not the final assignment result.")
         train_ds = make_record_dataset(args.records, "train", args.batch_size, True, args.seed, args.max_classes)
         test_ds = make_record_dataset(args.records, "test", args.batch_size, False, args.seed, args.max_classes)
         meta = dict(meta)
@@ -204,9 +204,9 @@ def main() -> int:
         meta["samples_per_class_target"] = args.samples_per_class
         (result_dir / "labels.txt").write_text("\n".join(labels) + "\n", encoding="utf-8")
 
-    print(f"類別數 {num_classes}，訓練樣本 {meta['train_examples']}，測試樣本 {meta['test_examples']}")
+    print(f"Classes {num_classes}, training samples {meta['train_examples']}, test samples {meta['test_examples']}")
     if num_classes != 13065:
-        print("警告：輸出層不是 13,065。正式繳交請用完整資料集，且不要加 --max-classes。")
+        print("Warning: the output layer is not 13,065. For the official submission, use the full dataset and do not pass --max-classes.")
 
     # TFRecord cardinality is unknown, so Keras would stop a later epoch early.
     # Repeat the training set and cut each epoch at the real batch count.
@@ -225,7 +225,7 @@ def main() -> int:
         model_path = model_dir / f"{name}.keras"
         done = completed_epochs(csv_path) if args.resume and model_path.exists() else 0
         if done > 0:
-            print(f"接續訓練，已完成 {done} 個 epoch。")
+            print(f"Resuming training; {done} epochs already finished.")
             model = tf.keras.models.load_model(model_path)
             initial_epoch = done
         else:
@@ -255,7 +255,7 @@ def main() -> int:
                 verbose=1,
             )
         else:
-            print("已達到指定 epoch，直接評估測試集。")
+            print("The requested epoch count is already reached. Evaluating the test set.")
 
         # Keep a model file even when training was already finished.
         model.save(model_path)
@@ -269,12 +269,12 @@ def main() -> int:
             "top5": float(metrics["top5"]),
         }
         results.append(row)
-        print(f"{name} 測試辨識率 Top-1={row['accuracy']:.4f}  Top-5={row['top5']:.4f}")
+        print(f"{name} test recognition rate Top-1={row['accuracy']:.4f}  Top-5={row['top5']:.4f}")
         if csv_path.exists():
             save_history_plot(csv_path, result_dir / f"history_{name}.png")
 
     if not results:
-        print("沒有模型結果。")
+        print("No model results.")
         return 1
 
     best = max(results, key=lambda row: row["accuracy"])
@@ -288,8 +288,8 @@ def main() -> int:
     )
     write_report(results, meta, result_dir / "comparison.md", best["model"])
     save_comparison_chart(results, result_dir / "comparison.png")
-    print(f"\n最佳模型：{best['model']}，測試辨識率 {best['accuracy']:.4f}")
-    print("結果已寫入 results/comparison.md")
+    print(f"\nBest model: {best['model']}, test recognition rate {best['accuracy']:.4f}")
+    print("Results written to results/comparison.md")
     return 0
 
 

@@ -65,7 +65,7 @@ def configure_stdio() -> None:
 def download_file(bases: list, filename: str, dest: Path, expected: int) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists() and dest.stat().st_size == expected:
-        print(f"略過，已下載 {dest.name}")
+        print(f"Skipped, already downloaded {dest.name}")
         return
     if dest.exists():
         dest.unlink()
@@ -73,7 +73,7 @@ def download_file(bases: list, filename: str, dest: Path, expected: int) -> None
     last_error = None
     for base in bases:
         url = base + quote(filename)
-        print(f"下載 {filename}")
+        print(f"Downloading {filename}")
         try:
             request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urlopen(request, timeout=120) as response, dest.open("wb") as handle:
@@ -89,30 +89,30 @@ def download_file(bases: list, filename: str, dest: Path, expected: int) -> None
                         print(f"  {filename}: {downloaded / 1024 / 1024:.0f} MB")
                         next_report += 20 * 1024 * 1024
             if dest.stat().st_size != expected:
-                raise IOError(f"大小是 {dest.stat().st_size}，預期 {expected}")
-            print(f"完成 {filename}")
+                raise IOError(f"Size is {dest.stat().st_size}, expected {expected}")
+            print(f"Finished {filename}")
             return
         except (URLError, TimeoutError, OSError) as error:
             last_error = error
-            print(f"  失敗：{error}")
+            print(f"  Failed: {error}")
             if dest.exists():
                 dest.unlink()
-    raise RuntimeError(f"無法下載 {filename}：{last_error}")
+    raise RuntimeError(f"Could not download {filename}: {last_error}")
 
 
 def concat_parts(parts: list, destination: Path) -> None:
     expected = sum(size for _, size in parts)
     if destination.exists() and destination.stat().st_size == expected:
-        print(f"略過合併，已有 {destination.name}")
+        print(f"Skipped merge, already have {destination.name}")
         return
-    print(f"合併成分割壓縮檔 {destination.name}")
+    print(f"Merging split archives into {destination.name}")
     with destination.open("wb") as output:
         for filename, _size in parts:
             part_path = destination.parent / filename
             with part_path.open("rb") as incoming:
                 shutil.copyfileobj(incoming, output, length=1024 * 1024)
     if destination.stat().st_size != expected:
-        raise IOError("合併後的壓縮檔大小不正確。")
+        raise IOError("Merged archive size is incorrect.")
 
 
 def extract_common(zip_paths: list, output_dir: Path) -> None:
@@ -120,7 +120,7 @@ def extract_common(zip_paths: list, output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     written = 0
     for zip_path in zip_paths:
-        print(f"整理 {zip_path.name}")
+        print(f"Organizing {zip_path.name}")
         with zipfile.ZipFile(zip_path) as archive:
             for info in archive.infolist():
                 if info.is_dir():
@@ -134,7 +134,7 @@ def extract_common(zip_paths: list, output_dir: Path) -> None:
                 if not target.exists():
                     target.write_bytes(archive.read(info))
                     written += 1
-    print(f"常用字圖片已放到 {output_dir}（新寫入 {written} 張）。這不是 13,065 字的完整資料集。")
+    print(f"Common-character images written to {output_dir} ({written} new files). This is not the full 13,065-character dataset.")
 
 
 def main() -> int:
@@ -157,12 +157,12 @@ def main() -> int:
         archive = output / "all_data.zip"
         concat_parts(FULL_PARTS, archive)
         with zipfile.ZipFile(archive) as zipped:
-            print(f"壓縮檔可開啟，成員數 {len(zipped.infolist())}。")
+            print(f"Archive opens, member count {len(zipped.infolist())}.")
         if not args.keep_parts:
             for path in part_paths:
                 path.unlink(missing_ok=True)
-            print("已刪除分割檔，保留 data/all_data.zip。")
-        print("下一步：python prepare_records.py --zip data/all_data.zip --out data/records")
+            print("Deleted split files, kept data/all_data.zip.")
+        print("Next: python prepare_records.py --zip data/all_data.zip --out data/records")
         return 0
 
     part_paths = []
@@ -171,7 +171,7 @@ def main() -> int:
         download_file(COMMON_BASES, filename, path, size)
         part_paths.append(path)
     extract_common(part_paths, output / "common_cleaned")
-    print("下一步（僅供流程測試）：python train.py --data-dir data/common_cleaned --max-classes 20 --epochs 1")
+    print("Next (pipeline test only): python train.py --data-dir data/common_cleaned --max-classes 20 --epochs 1")
     return 0
 
 

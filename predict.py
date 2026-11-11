@@ -46,7 +46,7 @@ def main() -> int:
     batch = image.astype(np.float32).reshape(1, img_size, img_size, 1) / 255.0
     probabilities = model.predict(batch, verbose=0)[0]
     order = np.argsort(probabilities)[::-1][: args.topk]
-    print(f"圖片：{args.image}")
+    print(f"Image: {args.image}")
     for rank, index in enumerate(order, start=1):
         name = labels[index] if index < len(labels) else f"class_{index}"
         print(f"{rank}. {name}    {probabilities[index]:.4f}")
